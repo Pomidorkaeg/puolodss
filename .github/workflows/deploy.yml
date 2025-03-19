@@ -5,14 +5,19 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+# Разрешения для GitHub Token
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
+  actions: write
+  deployments: write
+  statuses: write
 
+# Настройка одновременного запуска
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -20,6 +25,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -28,13 +35,21 @@ jobs:
           cache: 'npm'
       
       - name: Setup Pages
+        id: pages
         uses: actions/configure-pages@v4
+        with:
+          enablement: true
+          static_site_generator: "vite"
           
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm install -g pnpm
+          pnpm install
         
       - name: Build
-        run: npm run build
+        run: pnpm run build
+        env:
+          NODE_ENV: production
         
       - name: Optimize images
         run: |
@@ -45,7 +60,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: ./dist
 
   deploy:
     environment:
